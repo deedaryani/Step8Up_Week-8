@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog^(API)</title>
+<style>
+  :root {
+    --paper: #FAF6ED;
+    --ink: #1A1A1A;
+    --ink-soft: #5B5B5B;
+    --accent: #1A8917;
+    --accent-soft: #D7ECD3;
+    --line: #E3DECE;
+    --card: #FFFFFE;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --serif: 'Georgia', 'Iowan Old Style', serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.5;
+  }
+  header {
+    border-bottom: 3px solid var(--ink);
+    padding: 28px 24px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .masthead {
+    font-family: var(--serif);
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .masthead sup {
+    font-size: 0.42em;
+    font-weight: 700;
+    top: -1.35em;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .tagline {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  #auth-area {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    text-align: right;
+  }
+  #auth-area button, .btn {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 999px;
+  }
+  #auth-area button.ghost, .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+  #category-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+  .chip {
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    background: var(--card);
+    color: var(--ink-soft);
+  }
+  .chip.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  #post-list { display: grid; gap: 18px; }
+  .post-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 4px;
+    padding: 20px 22px;
+  }
+  .post-meta {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .post-title { font-size: 1.4rem; margin: 0 0 8px; }
+  .post-content { color: var(--ink-soft); margin: 0 0 12px; }
+  .post-actions { display: flex; gap: 8px; }
+  .post-actions button {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  .post-actions button:hover { border-color: var(--ink); color: var(--ink); }
+
+  #composer {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px 22px;
+    display: none;
+  }
+  #composer.open { display: block; }
+  #composer h3 { margin-top: 0; font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+  #composer input, #composer textarea, #composer select {
+    width: 100%;
+    font-family: var(--serif);
+    font-size: 1rem;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  #composer textarea { min-height: 120px; resize: vertical; }
+
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px;
+    max-width: 360px;
+    width: 90%;
+    font-family: var(--serif);
+    background: var(--card);
+  }
+  dialog h3 { margin-top: 0; font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; }
+  dialog input {
+    width: 100%;
+    padding: 9px 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-family: var(--serif);
+  }
+  dialog .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  #msg {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    display: none;
+  }
+  #msg.error { border-color: #C4472F; color: #C4472F; display: block; }
+  #msg.ok { border-color: var(--accent); color: var(--accent); display: block; }
+  .empty { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-soft); text-align: center; padding: 40px 0; }
+
+  .hero {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 64px 24px 40px;
+    display: flex;
+    align-items: center;
+    gap: 56px;
+    flex-wrap: wrap;
+  }
+  .hero-text { flex: 1 1 380px; }
+  .hero-text h1 {
+    font-family: var(--serif);
+    font-size: 3.4rem;
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -1px;
+    margin: 0 0 22px;
+  }
+  .hero-text p {
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    margin: 0 0 28px;
+    max-width: 420px;
+  }
+  .hero-cta {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 14px 28px;
+    cursor: pointer;
+    border-radius: 999px;
+  }
+  .hero-visual {
+    flex: 1 1 380px;
+    height: 380px;
+    min-width: 320px;
+    border-radius: 16px;
+    background: #0D1210;
+    overflow: hidden;
+    position: relative;
+  }
+  .hero-visual canvas { display: block; width: 100% !important; height: 100% !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="masthead">Blog<sup>API</sup></div>
+    <div class="tagline">a blogging platform</div>
+  </div>
+  <div id="auth-area"></div>
+</header>
+
+<section class="hero">
+  <div class="hero-text">
+    <h1>Blogs,<br>served over Node.js.</h1>
+    <p>CRUD operations for a blogging platform.</p>
+    <button class="hero-cta" id="hero-start-btn">Start reading</button>
+  </div>
+  <div class="hero-visual" id="spotlight-container"></div>
+</section>
+
+<main id="app">
+  <div id="msg"></div>
+
+  <div class="toolbar">
+    <div id="category-filters"></div>
+    <button class="btn" id="new-post-btn" style="display:none;">+ New Post</button>
+  </div>
+
+  <form id="composer">
+    <h3 id="composer-title">New Post</h3>
+    <input type="hidden" id="edit-post-id">
+    <input type="text" id="post-title" placeholder="Title" required>
+    <select id="post-category">
+      <option value="">No category</option>
+    </select>
+    <textarea id="post-content" placeholder="Write your post..." required></textarea>
+    <div style="display:flex; gap:8px;">
+      <button type="submit" class="btn">Publish</button>
+      <button type="button" class="btn ghost" id="cancel-composer">Cancel</button>
+    </div>
+  </form>
+
+  <div id="post-list"></div>
+</main>
+
+<dialog id="auth-dialog">
+  <h3 id="auth-dialog-title">Log In</h3>
+  <div id="name-field" style="display:none;">
+    <input type="text" id="auth-name" placeholder="Name">
+  </div>
+  <input type="email" id="auth-email" placeholder="Email">
+  <input type="password" id="auth-password" placeholder="Password">
+  <div class="row">
+    <button class="btn ghost" id="auth-cancel" type="button">Cancel</button>
+    <button class="btn" id="auth-submit" type="button">Log In</button>
+  </div>
+  <p style="font-family: var(--mono); font-size: 0.7rem; margin-top: 10px;">
+    <a href="#" id="auth-toggle-mode">Need an account? Register instead</a>
+  </p>
+</dialog>
+
+<script>
+const API = '/api';
+let currentUser = null;
+let categories = [];
+let activeCategory = null;
+let authMode = 'login';
+
+const $ = sel => document.querySelector(sel);
+const msgEl = $('#msg');
+
+function showMsg(text, type = 'ok') {
+  msgEl.textContent = text;
+  msgEl.className = type;
+  setTimeout(() => { msgEl.className = ''; }, 4000);
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...options
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ---- Auth ----
+function renderAuthArea() {
+  const area = $('#auth-area');
+  if (currentUser) {
+    area.innerHTML = `Signed in as <strong>${currentUser.name}</strong> &nbsp; <button class="ghost" id="logout-btn">Log out</button>`;
+    $('#logout-btn').onclick = logout;
+    $('#new-post-btn').style.display = 'inline-block';
+  } else {
+    area.innerHTML = `<button id="login-btn">Log In / Register</button>`;
+    $('#login-btn').onclick = () => openAuthDialog('login');
+    $('#new-post-btn').style.display = 'none';
+  }
+}
+
+function openAuthDialog(mode) {
+  authMode = mode;
+  $('#auth-dialog-title').textContent = mode === 'login' ? 'Log In' : 'Register';
+  $('#auth-submit').textContent = mode === 'login' ? 'Log In' : 'Register';
+  $('#name-field').style.display = mode === 'register' ? 'block' : 'none';
+  $('#auth-toggle-mode').textContent = mode === 'login' ? 'Need an account? Register instead' : 'Already have an account? Log in';
+  $('#auth-dialog').showModal();
+}
+
+$('#auth-toggle-mode').onclick = (e) => {
+  e.preventDefault();
+  openAuthDialog(authMode === 'login' ? 'register' : 'login');
+};
+$('#auth-cancel').onclick = () => $('#auth-dialog').close();
+
+$('#auth-submit').onclick = async () => {
+  const email = $('#auth-email').value.trim();
+  const password = $('#auth-password').value;
+  const name = $('#auth-name').value.trim();
+  try {
+    const endpoint = authMode === 'login' ? '/auth/login' : '/auth/register';
+    const body = authMode === 'login' ? { email, password } : { name, email, password };
+    const data = await api(endpoint, { method: 'POST', body: JSON.stringify(body) });
+    currentUser = data.user;
+    $('#auth-dialog').close();
+    renderAuthArea();
+    showMsg(data.message, 'ok');
+    loadPosts();
+  } catch (err) {
+    showMsg(err.message, 'error');
+  }
+};
+
+async function logout() {
+  await api('/auth/logout', { method: 'POST' });
+  currentUser = null;
+  renderAuthArea();
+  $('#composer').classList.remove('open');
+  loadPosts();
+}
+
+async function checkSession() {
+  try {
+    const data = await api('/auth/me');
+    currentUser = data.user;
+  } catch { currentUser = null; }
+  renderAuthArea();
+}
+
+// ---- Categories ----
+async function loadCategories() {
+  categories = await api('/categories');
+  const filterBar = $('#category-filters');
+  filterBar.innerHTML = '<div class="chip active" data-slug="">All</div>' +
+    categories.map(c => `<div class="chip" data-slug="${c.slug}">${c.name}</div>`).join('');
+  filterBar.querySelectorAll('.chip').forEach(chip => {
+    chip.onclick = () => {
+      filterBar.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeCategory = chip.dataset.slug || null;
+      loadPosts();
+    };
+  });
+
+  const select = $('#post-category');
+  select.innerHTML = '<option value="">No category</option>' +
+    categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// ---- Posts ----
+async function loadPosts() {
+  const qs = activeCategory ? `?category=${activeCategory}` : '';
+  const data = await api('/posts' + qs);
+  const list = $('#post-list');
+  if (data.posts.length === 0) {
+    list.innerHTML = '<div class="empty">No posts here yet.</div>';
+    return;
+  }
+  list.innerHTML = data.posts.map(p => `
+    <article class="post-card">
+      <div class="post-meta">
+        <span>${p.author.name}</span>
+        <span>${new Date(p.created_at).toLocaleDateString()}</span>
+        ${p.category ? `<span>#${p.category.name}</span>` : ''}
+      </div>
+      <h2 class="post-title">${escapeHtml(p.title)}</h2>
+      <p class="post-content">${escapeHtml(p.content)}</p>
+      ${currentUser && currentUser.id === p.author.id ? `
+        <div class="post-actions">
+          <button onclick="editPost(${p.id})">Edit</button>
+          <button onclick="deletePost(${p.id})">Delete</button>
+        </div>` : ''}
+    </article>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+window.deletePost = async (id) => {
+  if (!confirm('Delete this post?')) return;
+  try {
+    await api(`/posts/${id}`, { method: 'DELETE' });
+    showMsg('Post deleted.', 'ok');
+    loadPosts();
+  } catch (err) {
+    showMsg(err.message, 'error');
+  }
+};
+
+window.editPost = async (id) => {
+  const post = await api(`/posts/${id}`);
+  $('#composer-title').textContent = 'Edit Post';
+  $('#edit-post-id').value = id;
+  $('#post-title').value = post.title;
+  $('#post-content').value = post.content;
+  $('#post-category').value = post.category ? post.category.id : '';
+  $('#composer').classList.add('open');
+  $('#composer').scrollIntoView({ behavior: 'smooth' });
+};
+
+$('#new-post-btn').onclick = () => {
+  $('#composer-title').textContent = 'New Post';
+  $('#edit-post-id').value = '';
+  $('#post-title').value = '';
+  $('#post-content').value = '';
+  $('#post-category').value = '';
+  $('#composer').classList.add('open');
+};
+
+$('#cancel-composer').onclick = () => $('#composer').classList.remove('open');
+
+$('#composer').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = $('#edit-post-id').value;
+  const body = {
+    title: $('#post-title').value,
+    content: $('#post-content').value,
+    category_id: $('#post-category').value || null
+  };
+  try {
+    if (id) {
+      await api(`/posts/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+      showMsg('Post updated.', 'ok');
+    } else {
+      await api('/posts', { method: 'POST', body: JSON.stringify(body) });
+      showMsg('Post published.', 'ok');
+    }
+    $('#composer').classList.remove('open');
+    loadPosts();
+  } catch (err) {
+    showMsg(err.message, 'error');
+  }
+});
+
+// ---- Hero CTA ----
+$('#hero-start-btn').onclick = () => {
+  $('#app').scrollIntoView({ behavior: 'smooth' });
+};
+
+// ---- Init ----
+(async function init() {
+  await checkSession();
+  await loadCategories();
+  await loadPosts();
+})();
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+// Spotlight hero visual, adapted from the three.js spotlight example
+// (https://threejs.org/examples/#webgl_lights_spotlight)
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const container = document.getElementById('spotlight-container');
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0d1210, 15, 60);
+const camera = new THREE.PerspectiveCamera(
+  45,
+  container.clientWidth / container.clientHeight,
+  0.1,
+  500
+);
+camera.position.set(0, 2.6, 7.5);
+camera.lookAt(0, 0.4, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.15;
+container.appendChild(renderer.domElement);
+
+// Floor the spotlight falls on — kept light enough that the textured light pattern reads clearly
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(400, 400),
+  new THREE.MeshLambertMaterial({ color: 0xbcbcbc })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -1.6;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Central object — the sculpture, loaded from /assets/sculpture.gltf
+const sculptureGroup = new THREE.Group();
+scene.add(sculptureGroup);
+
+const loader = new GLTFLoader();
+loader.load(
+  '/assets/sculpture.gltf',
+  (gltf) => {
+    const model = gltf.scene;
+
+    // Normalize scale and center it on the floor, regardless of how it was exported
+    const box = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+
+    const targetHeight = 3.6;
+    const scale = targetHeight / (size.y || 1);
+    model.scale.setScalar(scale);
+
+    // Recompute the box after scaling to re-center precisely
+    const scaledBox = new THREE.Box3().setFromObject(model);
+    const scaledCenter = new THREE.Vector3();
+    scaledBox.getCenter(scaledCenter);
+    model.position.x -= scaledCenter.x;
+    model.position.z -= scaledCenter.z;
+    model.position.y -= scaledBox.min.y - floor.position.y;
+
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    sculptureGroup.add(model);
+    console.log('Sculpture loaded:', model);
+  },
+  undefined,
+  (error) => {
+    console.error('Could not load /assets/sculpture.gltf', error);
+  }
+);
+
+// Textured spotlight — the mottled, cloudy light pattern comes from spotLight.map,
+// using the custom tiled texture from /assets/disturb.jpg.
+const textureLoader = new THREE.TextureLoader();
+const spotTexture = textureLoader.load(
+  '/assets/disturb.jpg',
+  () => console.log('Spotlight texture loaded'),
+  undefined,
+  (err) => console.error('Spotlight texture failed to load', err)
+);
+spotTexture.wrapS = THREE.RepeatWrapping;
+spotTexture.wrapT = THREE.RepeatWrapping;
+spotTexture.repeat.set(53, 53); // same tile size as before (30/4 world units per tile), scaled to the 400-unit floor
+spotTexture.minFilter = THREE.LinearFilter;
+spotTexture.magFilter = THREE.LinearFilter;
+spotTexture.generateMipmaps = false;
+spotTexture.colorSpace = THREE.SRGBColorSpace;
+
+const spotLight = new THREE.SpotLight(0xffffff, 393.5);
+spotLight.map = spotTexture;
+spotLight.position.set(4, 6, 2);
+spotLight.angle = 0.772831;
+spotLight.penumbra = 1;
+spotLight.decay = 2;
+spotLight.distance = 20;
+
+spotLight.castShadow = true;
+spotLight.shadow.mapSize.set(1024, 1024);
+spotLight.shadow.camera.near = 1;
+spotLight.shadow.camera.far = 15;
+spotLight.shadow.focus = 1;
+spotLight.shadow.bias = -0.003;
+spotLight.shadow.intensity = 0.971;
+scene.add(spotLight);
+scene.add(spotLight.target);
+
+// Hemisphere ambient, tinted toward the site's green accent
+scene.add(new THREE.HemisphereLight(0xd7f5d0, 0x1a2e1c, 0.12));
+
+function animate(t) {
+  requestAnimationFrame(animate);
+  const time = t * 0.00035;
+
+  spotLight.position.x = Math.sin(time) * 4.5;
+  spotLight.position.z = Math.cos(time) * 4.5;
+
+  sculptureGroup.rotation.y += 0.0035;
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+window.addEventListener('resize', () => {
+  const w = container.clientWidth, h = container.clientHeight;
+  if (!w || !h) return;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+</script>
+</body>
+</html>
